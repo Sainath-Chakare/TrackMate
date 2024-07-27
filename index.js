@@ -11,11 +11,19 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(express.urlencoded({extended:true}));
 app.use(express.json());
 
+const connectedUsers = new Map();
+
 io.on("connection",(socket)=>{
+   socket.on("join",(username)=>{
+      socket.emit("existing-users", Array.from(connectedUsers.values()));
+   });
    socket.on("send-position",(data)=>{
-      io.emit("receive-position",{id:socket.id, ...data});
+      const userData = { id: socket.id, ...data };
+      connectedUsers.set(socket.id, userData);
+      io.emit("receive-position",userData);
    })
    socket.on("disconnect",()=>{
+      connectedUsers.delete(socket.id);
       io.emit("user-disconnect",{id:socket.id});
    })
 })
